@@ -14,6 +14,7 @@ APT_PROGRAMS=(
     mysql-workbench
     mysql-server
     php php-curl php-mbstring php-mysql php-sqlite3
+    git
 )
 
 FLATPAK_PROGRAMS=(
