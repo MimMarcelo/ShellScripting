@@ -7,9 +7,9 @@
 PROGRAMS_TO_UNINSTALL=(
     libreoffice
     gimp
+    inkscape
 )
 APT_PROGRAMS=(
-    inkscape
     kdenlive breeze frei0r-plugins
     mysql-workbench
     mysql-server
@@ -80,17 +80,13 @@ sudo apt update -y
 echo "************************************************************************"
 echo "* INSTALL APT PROGRAMS                                                 *"
 echo "************************************************************************"
-for program in ${APT_PROGRAMS[@]}; do
-    apt install $program -y
-done
+apt install ${APT_PROGRAMS[@]} -y
 
 echo "************************************************************************"
 echo "* INSTALL FLATPAK PROGRAMS                                             *"
 echo "************************************************************************"
 flatpak update
-for program in ${FLATPAK_PROGRAMS[@]}; do
-    flatpak install flathub $program -y
-done
+flatpak install flathub ${FLATPAK_PROGRAMS[@]} -y
 
 echo "************************************************************************"
 echo "* DOWNLOAD PROGRAMS                                                    *"
@@ -120,6 +116,24 @@ else
         cp "$appImage" "$APPIMAGE_PATH/"
     done
 fi
+
+echo "************************************************************************"
+echo "* INSTALL COMPOSER                                                     *"
+echo "************************************************************************"
+EXPECTED_CHECKSUM="$(wget -q -O - https://composer.github.io/installer.sig)"
+php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+ACTUAL_CHECKSUM="$(php -r "echo hash_file('sha384', 'composer-setup.php');")"
+
+if [ "$EXPECTED_CHECKSUM" != "$ACTUAL_CHECKSUM" ]; then
+    >&2 echo 'ERROR: Invalid installer checksum'
+    rm composer-setup.php
+    echo "Composer installation failed"
+fi
+
+php composer-setup.php --install-dir=$DONWLOADS --quiet
+RESULT=$?
+rm composer-setup.php
+mv "$DOWNLOADS/composer.phar" /usr/local/bin/composer
 
 echo "************************************************************************"
 echo "* UPDATE, CLEAN AND ENDING                                             *"
