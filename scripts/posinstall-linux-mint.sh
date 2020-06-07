@@ -3,6 +3,13 @@
 # Marcelo Júnior (MimMarcelo), https://github.com/MimMarcelo/ShellScripting
 
 ###############################################################################
+# Verifica se o script está sendo executado como sudo                         #
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root" 1>&2
+   exit 1
+fi
+
+###############################################################################
 # Definição das variáveis                                                     #
 PROGRAMS_TO_UNINSTALL=(
     libreoffice
@@ -50,6 +57,8 @@ URLs=(
 
 GIT_EMAIL="rokermarcelo@gmail.com"
 GIT_USER="Marcelo Júnior"
+
+MYSQL_ROOT_PASSWORD="Senha12#"
 
 DOWNLOADS="$HOME/Downloads/programs"
 APPIMAGE_PATH="$HOME/.AppImage"
@@ -156,9 +165,58 @@ git config --global user.email "$GIT_EMAIL"
 git config --global user.name "$GIT_USER"
 
 echo "************************************************************************"
+echo "* MYSQL CONFIGURATION                                                  *"
+echo "************************************************************************"
+if [ $(dpkg-query -W -f='${Status}' expect 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+    echo "Can't find expect. Trying install it..."
+    aptitude -y install expect
+fi
+
+SECURE_MYSQL=$(expect -c "
+    set timeout 3
+    spawn mysql_secure_installation
+    expect \"Press y|Y for Yes, any other key for No:\"
+    send \"y\r\"
+    expect \"Please enter 0 = LOW, 1 = MEDIUM and 2 = STRONG:\"
+    send \"2\r\"
+    expect \"New password:\"
+    send \"$MYSQL_ROOT_PASSWORD\r\"
+    expect \"Re-enter new password:\"
+    send \"$MYSQL_ROOT_PASSWORD\r\"
+    expect \"Do you wish to continue with the password provided?(Press y|Y for Yes, any other key for No) :\"
+    send \"y\r\"
+    expect \"Remove anonymous users? (Press y|Y for Yes, any other key for No) :\"
+    send \"y\r\"
+    expect \"RDisallow root login remotely? (Press y|Y for Yes, any other key for No) :\"
+    send \"y\r\"
+    expect \"Remove test database and access to it? (Press y|Y for Yes, any other key for No) :\"
+    send \"y\r\"
+    expect \"Reload privilege tables now? (Press y|Y for Yes, any other key for No) :\"
+    send \"y\r\"
+    expect eof
+")
+
+#
+# Execution mysql_secure_installation
+#
+echo "${SECURE_MYSQL}"
+
+ENABLE_ROOT_BY_PASSWORD=$(expect -c "
+    set timeout 3
+    spawn mysql
+    send \"ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '${MYSQL_ROOT_PASSWORD}';\r\"
+    send \"FLUSH PRIVILEGES;\r\"
+    send \"exit;\r\"
+    expect eof
+")
+
+echo "${ENABLE_ROOT_BY_PASSWORD}"
+
+aptitude -y purge expect
+
+echo "************************************************************************"
 echo "* GRUB CONFIGURATION                                                   *"
 echo "************************************************************************"
-
 sed -e "s/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/" -e "s/#GRUB_DISABLE_RECOVERY=.*/GRUB_DISABLE_RECOVERY=\"true\"\nGRUB_DISABLE_SUBMENU=\"y\"/" "$GRUB" >"$DOWNLOADS/grub"
 sudo cp "$GRUB" "$GRUB.original"
 sudo mv "$DOWNLOADS/grub" "$GRUB"
