@@ -22,7 +22,7 @@ APT_PROGRAMS=(
     kdenlive breeze frei0r-plugins
     mysql-workbench
     mysql-server
-    php php-curl php-mbstring php-mysql php-pdo php-sqlite3 phpunit
+    php php-curl php-mbstring php-mysql php-sqlite3 phpunit
     git
 )
 
