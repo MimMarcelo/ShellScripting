@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Marcelo Júnior (MimMarcelo), https://github.com/MimMarcelo/
+# Marcelo Júnior (MimMarcelo), https://github.com/MimMarcelo/ShellScripting
 
 ###############################################################################
 # Definição das variáveis                                                     #
@@ -8,12 +8,14 @@ PROGRAMS_TO_UNINSTALL=(
     libreoffice
     gimp
     inkscape
+    memtest86+
 )
 APT_PROGRAMS=(
+    software-properties-common 
     kdenlive breeze frei0r-plugins
     mysql-workbench
     mysql-server
-    php php-curl php-mbstring php-mysql php-sqlite3
+    php php-curl php-mbstring php-mysql php-pdo php-sqlite3 phpunit
     git
 )
 
@@ -46,8 +48,20 @@ URLs=(
     http://staruml.io/download/releases/StarUML-3.2.2.AppImage
 )
 
+GIT_EMAIL="rokermarcelo@gmail.com"
+GIT_USER="Marcelo Júnior"
+
 DOWNLOADS="$HOME/Downloads/programs"
 APPIMAGE_PATH="$HOME/.AppImage"
+GRUB="/etc/default/grub"
+
+if [ ! -d "$DOWNLOADS" ]; then
+    mkdir "$DOWNLOADS"
+fi
+
+if [ ! -d "$APPIMAGE_PATH" ]; then
+    mkdir "$APPIMAGE_PATH"
+fi
 
 ###############################################################################
 # Removendo eventuais travas do APT                                           #
@@ -134,6 +148,21 @@ php composer-setup.php --install-dir=$DONWLOADS --quiet
 RESULT=$?
 rm composer-setup.php
 mv "$DOWNLOADS/composer.phar" /usr/local/bin/composer
+
+echo "************************************************************************"
+echo "* GIT CONFIGURATION                                                    *"
+echo "************************************************************************"
+git config --global user.email "$GIT_EMAIL"
+git config --global user.name "$GIT_USER"
+
+echo "************************************************************************"
+echo "* GRUB CONFIGURATION                                                   *"
+echo "************************************************************************"
+
+sed -e "s/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/" -e "s/#GRUB_DISABLE_RECOVERY=.*/GRUB_DISABLE_RECOVERY=\"true\"\nGRUB_DISABLE_SUBMENU=\"y\"/" "$GRUB" >"$DOWNLOADS/grub"
+sudo cp "$GRUB" "$GRUB.original"
+sudo mv "$DOWNLOADS/grub" "$GRUB"
+sudo update-grub
 
 echo "************************************************************************"
 echo "* UPDATE, CLEAN AND ENDING                                             *"
