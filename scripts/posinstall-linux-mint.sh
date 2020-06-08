@@ -16,14 +16,19 @@ PROGRAMS_TO_UNINSTALL=(
     gimp
     inkscape
     memtest86+
+    celluloid
+    gnote
+    redshift
+    rhythmbox
 )
 APT_PROGRAMS=(
     software-properties-common 
-    kdenlive breeze frei0r-plugins
+    breeze frei0r-plugins
     mysql-workbench
     mysql-server
     php php-curl php-mbstring php-mysql php-sqlite3 phpunit
     git
+    ttf-mscorefonts-installer
 )
 
 FLATPAK_PROGRAMS=(
@@ -39,12 +44,12 @@ FLATPAK_PROGRAMS=(
     com.sweethome3d.Sweethome3d
     org.videolan.VLC
     org.libreoffice.LibreOffice
+    org.kde.kdenlive
 )
 
 PPAs=(
     ppa:ondrej/php
     ppa:graphics-drivers/ppa
-    ppa:kdenlive/kdenlive-stable
 )
 
 URLs=(
