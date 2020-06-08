@@ -22,7 +22,7 @@ PROGRAMS_TO_UNINSTALL=(
     rhythmbox
 )
 APT_PROGRAMS=(
-    software-properties-common 
+    software-properties-common
     breeze frei0r-plugins
     mysql-workbench
     mysql-server
@@ -45,6 +45,7 @@ FLATPAK_PROGRAMS=(
     org.videolan.VLC
     org.libreoffice.LibreOffice
     org.kde.kdenlive
+    io.atom.Atom
 )
 
 PPAs=(
