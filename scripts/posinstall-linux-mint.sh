@@ -81,37 +81,37 @@ fi
 
 ###############################################################################
 # Removendo eventuais travas do APT                                           #
-sudo rm /var/lib/dpkg/lock-frontend
-sudo rm /var/cache/apt/archives/lock
+rm /var/lib/dpkg/lock-frontend
+rm /var/cache/apt/archives/lock
 
 echo "************************************************************************"
 echo "* UNINSTALL SOME PREINSTALLED PROGRAMS                                 *"
 echo "************************************************************************"
 for program in ${PROGRAMS_TO_UNINSTALL[@]}; do
     if dpkg -l | grep -q $nome_do_programa; then # Só desinstala se estiver instalado
-        sudo apt remove --purge $program -y
+        apt remove --purge $program -y
     fi
 done
 
 ###############################################################################
 # Limpa o cache das desinstalações                                            #
-sudo apt clean
-sudo apt autoremove -y
+apt clean
+apt autoremove -y
 
 echo "************************************************************************"
 echo "* PPAs REGISTER                                                        *"
 echo "************************************************************************"
 for ppa in ${PPAs[@]}; do
-    sudo apt-add-repository "$ppa" -y
+    apt-add-repository "$ppa" -y
 done
 
 ###############################################################################
 # Atualização das dependências do sistema                                     #
-sudo apt update -y
+apt update -y
 
 ###############################################################################
 # Aceita os termos de instalação das fontes da Microsoft                      #
-echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | sudo debconf-set-selections
+echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections
 
 echo "************************************************************************"
 echo "* INSTALL APT PROGRAMS                                                 *"
@@ -137,7 +137,7 @@ echo "* INSTALL DEB PROGRAMS                                                 *"
 echo "************************************************************************"
 debs=$(find $DOWNLOADS -type f -iregex ".*\.\(deb\)")
 for deb in $debs; do
-    sudo dpkg -i $deb
+    dpkg -i $deb
 done
 
 echo "************************************************************************"
@@ -231,14 +231,13 @@ echo "************************************************************************"
 echo "* GRUB CONFIGURATION                                                   *"
 echo "************************************************************************"
 sed -e "s/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/" -e "s/#GRUB_DISABLE_RECOVERY=.*/GRUB_DISABLE_RECOVERY=\"true\"\nGRUB_DISABLE_SUBMENU=\"y\"/" "$GRUB" >"$DOWNLOADS/grub"
-sudo cp "$GRUB" "$GRUB.original"
-sudo mv "$DOWNLOADS/grub" "$GRUB"
-sudo update-grub
+cp "$GRUB" "$GRUB.original"
+mv "$DOWNLOADS/grub" "$GRUB"
+update-grub
 
 echo "************************************************************************"
 echo "* UPDATE, CLEAN AND ENDING                                             *"
 echo "************************************************************************"
-sudo apt update
-sudo apt upgrade -y
-sudo apt autoclean
-sudo apt autoremove -y
+apt upgrade -y
+apt autoclean
+apt autoremove -y
