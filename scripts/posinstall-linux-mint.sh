@@ -88,7 +88,7 @@ echo "************************************************************************"
 echo "* UNINSTALL SOME PREINSTALLED PROGRAMS                                 *"
 echo "************************************************************************"
 for program in ${PROGRAMS_TO_UNINSTALL[@]}; do
-    if dpkg -l | grep -q $nome_do_programa; then # Só desinstala se estiver instalado
+    if dpkg -l | grep -q $program; then # Só desinstala se estiver instalado
         apt remove --purge $program -y
     fi
 done
