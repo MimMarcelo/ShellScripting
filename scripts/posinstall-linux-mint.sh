@@ -88,7 +88,9 @@ echo "************************************************************************"
 echo "* UNINSTALL SOME PREINSTALLED PROGRAMS                                 *"
 echo "************************************************************************"
 for program in ${PROGRAMS_TO_UNINSTALL[@]}; do
-    sudo apt remove --purge $program -y
+    if dpkg -l | grep -q $nome_do_programa; then # Só desinstala se estiver instalado
+        sudo apt remove --purge $program -y
+    fi
 done
 
 ###############################################################################
@@ -106,6 +108,10 @@ done
 ###############################################################################
 # Atualização das dependências do sistema                                     #
 sudo apt update -y
+
+###############################################################################
+# Aceita os termos de instalação das fontes da Microsoft                      #
+echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | sudo debconf-set-selections
 
 echo "************************************************************************"
 echo "* INSTALL APT PROGRAMS                                                 *"
