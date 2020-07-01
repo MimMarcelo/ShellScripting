@@ -108,6 +108,7 @@ done
 ###############################################################################
 # Atualização das dependências do sistema                                     #
 apt update -y
+flatpak update -y
 
 ###############################################################################
 # Aceita os termos de instalação das fontes da Microsoft                      #
@@ -116,13 +117,17 @@ echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select tr
 echo "************************************************************************"
 echo "* INSTALL APT PROGRAMS                                                 *"
 echo "************************************************************************"
-apt install ${APT_PROGRAMS[@]} -y
+for program in ${APT_PROGRAMS[@]}; do
+    apt install $program -y
+done
+
 
 echo "************************************************************************"
 echo "* INSTALL FLATPAK PROGRAMS                                             *"
 echo "************************************************************************"
-flatpak update
-flatpak install flathub ${FLATPAK_PROGRAMS[@]} -y
+for program in ${FLATPAK_PROGRAMS[@]}; do
+    flatpak install flathub $program -y
+done
 
 echo "************************************************************************"
 echo "* DOWNLOAD PROGRAMS                                                    *"
