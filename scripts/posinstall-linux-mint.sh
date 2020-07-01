@@ -12,7 +12,7 @@ fi
 ###############################################################################
 # Definição das variáveis                                                     #
 PROGRAMS_TO_UNINSTALL=(
-    libreoffice
+    libreoffice-core
     gimp
     inkscape
     memtest86+
@@ -28,6 +28,7 @@ APT_PROGRAMS=(
     mysql-server
     php php-curl php-mbstring php-mysql php-sqlite3 phpunit
     git
+    libc6:i386 libncurses5:i386 libstdc++6:i386 lib32z1 libbz2-1.0:i386
     ttf-mscorefonts-installer
 )
 
@@ -87,7 +88,7 @@ echo "************************************************************************"
 echo "* UNINSTALL SOME PREINSTALLED PROGRAMS                                 *"
 echo "************************************************************************"
 for program in ${PROGRAMS_TO_UNINSTALL[@]}; do
-    sudo apt remove --purge $program* -y
+    sudo apt remove --purge $program -y
 done
 
 ###############################################################################
