@@ -10,7 +10,20 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 ###############################################################################
-# Definição das variáveis                                                     #
+# Define as variáveis                                                     #
+spin='-\|/' # Utilizado na função [loading], representa o carregamento
+
+GIT_EMAIL="rokermarcelo@gmail.com"   # e-mail global do Git
+GIT_USER="Marcelo Júnior"            # Usuário global do Git
+
+MYSQL_ROOT_PASSWORD="Senha12#"       # Senha de root do MySQL
+
+DOWNLOADS="$HOME/Downloads/programs" # Pasta onde os baixar os programas
+GRUB="/etc/default/grub"             # Localização do GRUB do sistema
+# APPIMAGE_PATH="$HOME/.AppImage"
+
+###############################################################################
+# Define as listas                                                        #
 PROGRAMS_TO_UNINSTALL=(
     libreoffice-core
     gimp
@@ -24,7 +37,6 @@ PROGRAMS_TO_UNINSTALL=(
 APT_PROGRAMS=(
     software-properties-common
     breeze frei0r-plugins
-    mysql-workbench
     mysql-server
     php php-curl php-mbstring php-mysql php-sqlite3 phpunit
     git
@@ -59,18 +71,116 @@ URLs=(
     https://d2t3ff60b2tol4.cloudfront.net/builds/insync_3.0.20.40428-bionic_amd64.deb
     https://download.virtualbox.org/virtualbox/6.1.8/virtualbox-6.1_6.1.8-137981~Ubuntu~eoan_amd64.deb
     https://download.virtualbox.org/virtualbox/6.1.8/Oracle_VM_VirtualBox_Extension_Pack-6.1.8.vbox-extpack
-    http://staruml.io/download/releases/StarUML-3.2.2.AppImage
+    http://cdn.mysql.com/Downloads/MySQLGUITools/mysql-workbench-community_8.0.20-1ubuntu20.04_amd64.deb
 )
+#     http://staruml.io/download/releases/StarUML-3.2.2.AppImage
 
-GIT_EMAIL="rokermarcelo@gmail.com"
-GIT_USER="Marcelo Júnior"
+###############################################################################
+# Define as funções                                                       #
 
-MYSQL_ROOT_PASSWORD="Senha12#"
+# Exibe elemento alusivo ao carregamento do processo
+# Recebe por parâmetro [$!] do processo
+function loading {
+  i=0
+  while kill -0 $1 2>/dev/null
+  do
+    i=$(( (i+1) %4 ))
+    printf "\r- Loading [${spin:$i:1}]"
+    sleep .1
+  done
+}
 
-DOWNLOADS="$HOME/Downloads/programs"
-APPIMAGE_PATH="$HOME/.AppImage"
-GRUB="/etc/default/grub"
+# Instala programa Flatpak
+# Recebe por parâmetro [nome_de_instalação] Flatpak
+function installFlatpak {
+  echo "Program $1:"
+  status=$(flatpak install flathub $1 -y) > /dev/null &
+  loading $! # Envia o [id do processo] para a função de loading
 
+  if [ $status > 0 ]; then
+      printf "\r- Not installed         \n"
+  else
+      printf "\r- Installed             \n"
+  fi
+}
+
+# Instala programa Apt
+# Recebe por parâmetro [nome_de_instalação] apt
+function installApt {
+  echo "Program $1:"
+  status=$(apt install $1 -y) > /dev/null &
+  loading $! # Envia o [id do processo] para a função de loading
+
+  if [ $status > 0 ]; then
+      printf "\r- Not installed         \n"
+  else
+      printf "\r- Installed             \n"
+  fi
+}
+
+# Instala programa .deb baixado
+# Recebe por parâmetro [nome_de_instalação] .deb
+function installDeb {
+  echo "Program $1:"
+  status=$(dpkg -i $deb) > /dev/null &
+  loading $! # Envia o [id do processo] para a função de loading
+
+  if [ $status > 0 ]; then
+      printf "\r- Not installed         \n"
+  else
+      printf "\r- Installed             \n"
+  fi
+}
+
+# Desinstala programa Apt
+# Recebe por parâmetro [nome_de_desinstalação] apt
+function uninstallApt {
+  echo "Program $1:"
+  if dpkg -l | grep -q $1; then # Só desinstala se estiver instalado
+      status=$(apt remove --purge $1 -y) > /dev/null &
+      loading $! # Envia o [id do processo] para a função de loading
+
+      if [ $status > 0 ]; then
+          printf "\r- Not uninstalled         \n"
+      else
+          printf "\r- Uninstalled             \n"
+      fi
+  else
+      echo "- Program not found           \n"
+  fi
+}
+
+# Adiciona PPA
+# Recebe por parâmetro [nome] do PPA
+function addPPA {
+  echo "PPA $1:"
+  status=$(apt-add-repository "$1" -y) > /dev/null &
+  loading $! # Envia o [id do processo] para a função de loading
+
+  if [ $status > 0 ]; then
+      printf "\r- Not added         \n"
+  else
+      printf "\r- Added             \n"
+  fi
+}
+
+# Baixa programa
+# Recebe por parâmetro [url] do programa
+function downloadProgram {
+  echo "Download $1:"
+  status=$(wget -c "$url" -P "$DOWNLOADS") > /dev/null &
+  loading $! # Envia o [id do processo] para a função de loading
+
+  if [ $status > 0 ]; then
+      printf "\r- Not downloaded       \n"
+  else
+      printf "\r- Downloaded           \n"
+  fi
+}
+
+###############################################################################
+# Cria diretórios importantes para o processo                              #
+echo "\nMaking important directories\n"
 if [ ! -d "$DOWNLOADS" ]; then
     mkdir "$DOWNLOADS"
 fi
@@ -78,9 +188,10 @@ fi
 if [ ! -d "$APPIMAGE_PATH" ]; then
     mkdir "$APPIMAGE_PATH"
 fi
+echo "Ready\n"
 
 ###############################################################################
-# Removendo eventuais travas do APT                                           #
+# Remove eventuais travas do APT                                           #
 rm /var/lib/dpkg/lock-frontend
 rm /var/cache/apt/archives/lock
 
@@ -88,27 +199,36 @@ echo "************************************************************************"
 echo "* UNINSTALL SOME PREINSTALLED PROGRAMS                                 *"
 echo "************************************************************************"
 for program in ${PROGRAMS_TO_UNINSTALL[@]}; do
-    if dpkg -l | grep -q $program; then # Só desinstala se estiver instalado
-        apt remove --purge $program -y
-    fi
+    uninstallApt $program
 done
 
 ###############################################################################
 # Limpa o cache das desinstalações                                            #
+echo "\nCleaning cache\n"
 apt clean
 apt autoremove -y
+echo "\nReady\n"
 
 echo "************************************************************************"
 echo "* PPAs REGISTER                                                        *"
 echo "************************************************************************"
 for ppa in ${PPAs[@]}; do
-    apt-add-repository "$ppa" -y
+    addPPA $ppa
 done
 
 ###############################################################################
 # Atualização das dependências do sistema                                     #
-apt update -y
-flatpak update -y
+echo "************************************************************************"
+echo "* UPDATING SYSTEM DEPENCENCIES                                         *"
+echo "************************************************************************"
+echo "APT dependencies"
+apt update -y > /dev/null &
+loading $! # Envia o [id do processo] para a função de loading
+printf "\r- Ready                   \n"
+echo "Flatpak dependencies"
+flatpak update -y > /dev/null &
+loading $! # Envia o [id do processo] para a função de loading
+printf "\r- Ready                   \n"
 
 ###############################################################################
 # Aceita os termos de instalação das fontes da Microsoft                      #
@@ -118,7 +238,7 @@ echo "************************************************************************"
 echo "* INSTALL APT PROGRAMS                                                 *"
 echo "************************************************************************"
 for program in ${APT_PROGRAMS[@]}; do
-    apt install $program -y
+    installApt $program
 done
 
 
@@ -126,7 +246,7 @@ echo "************************************************************************"
 echo "* INSTALL FLATPAK PROGRAMS                                             *"
 echo "************************************************************************"
 for program in ${FLATPAK_PROGRAMS[@]}; do
-    flatpak install flathub $program -y
+    installFlatpak $program
 done
 
 echo "************************************************************************"
@@ -134,7 +254,7 @@ echo "* DOWNLOAD PROGRAMS                                                    *"
 echo "************************************************************************"
 mkdir $DOWNLOADS
 for url in ${URLs[@]}; do
-    wget -c "$url" -P "$DOWNLOADS"
+    downloadProgram $url
 done
 
 echo "************************************************************************"
@@ -142,21 +262,21 @@ echo "* INSTALL DEB PROGRAMS                                                 *"
 echo "************************************************************************"
 debs=$(find $DOWNLOADS -type f -iregex ".*\.\(deb\)")
 for deb in $debs; do
-    dpkg -i $deb
+    installDeb $deb
 done
 
-echo "************************************************************************"
-echo "* COPYING APPIMAGE PROGRAMS                                            *"
-echo "************************************************************************"
-appImages=$(find $DOWNLOADS -type f -iregex ".*\.\(appimage\)")
-if [ -z $appImages ]; then
-    echo "None AppImage to Install"
-else
-    mkdir $APPIMAGE_PATH
-    for appImage in $appImages; do
-        cp "$appImage" "$APPIMAGE_PATH/"
-    done
-fi
+# echo "************************************************************************"
+# echo "* COPYING APPIMAGE PROGRAMS                                            *"
+# echo "************************************************************************"
+# appImages=$(find $DOWNLOADS -type f -iregex ".*\.\(appimage\)")
+# if [ -z $appImages ]; then
+#     echo "None AppImage to Install"
+# else
+#     mkdir $APPIMAGE_PATH
+#     for appImage in $appImages; do
+#         cp "$appImage" "$APPIMAGE_PATH/"
+#     done
+# fi
 
 echo "************************************************************************"
 echo "* INSTALL COMPOSER                                                     *"
@@ -241,7 +361,7 @@ mv "$DOWNLOADS/grub" "$GRUB"
 update-grub
 
 echo "************************************************************************"
-echo "* UPDATE, CLEAN AND ENDING                                             *"
+echo "* UPGRADE, CLEAN AND ENDING                                            *"
 echo "************************************************************************"
 apt upgrade -y
 apt autoclean
