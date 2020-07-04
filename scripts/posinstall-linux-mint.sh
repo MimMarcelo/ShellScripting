@@ -10,7 +10,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 ###############################################################################
-# Define as variáveis                                                     #
+# Define as variáveis                                                         #
 spin='-\|/' # Utilizado na função [loading], representa o carregamento
 
 GIT_EMAIL="rokermarcelo@gmail.com"   # e-mail global do Git
@@ -18,12 +18,14 @@ GIT_USER="Marcelo Júnior"            # Usuário global do Git
 
 MYSQL_ROOT_PASSWORD="Senha12#"       # Senha de root do MySQL
 
-DOWNLOADS="$HOME/Downloads/programs" # Pasta onde os baixar os programas
+# Utilizar [$HOME] aponta para o home do root,
+# já que o script é executado como tal
+DOWNLOADS="/home/marcelo/Downloads/programs" # Pasta onde os baixar os programas
 GRUB="/etc/default/grub"             # Localização do GRUB do sistema
 # APPIMAGE_PATH="$HOME/.AppImage"
 
 ###############################################################################
-# Define as listas                                                        #
+# Define as listas                                                            #
 PROGRAMS_TO_UNINSTALL=(
     libreoffice-core
     gimp
@@ -76,7 +78,7 @@ URLs=(
 #     http://staruml.io/download/releases/StarUML-3.2.2.AppImage
 
 ###############################################################################
-# Define as funções                                                       #
+# Define as funções                                                           #
 
 # Exibe elemento alusivo ao carregamento do processo
 # Recebe por parâmetro [$!] do processo
@@ -94,7 +96,7 @@ function loading {
 # Recebe por parâmetro [nome_de_instalação] Flatpak
 function installFlatpak {
   echo "Program $1:"
-  status=$(flatpak install flathub $1 -y) > /dev/null &
+  status=$(flatpak install flathub $1 -y 2> /dev/null) &
   loading $! # Envia o [id do processo] para a função de loading
 
   if [ $status > 0 ]; then
@@ -108,7 +110,7 @@ function installFlatpak {
 # Recebe por parâmetro [nome_de_instalação] apt
 function installApt {
   echo "Program $1:"
-  status=$(apt install $1 -y) > /dev/null &
+  status=$(apt install $1 -y 2> /dev/null) &
   loading $! # Envia o [id do processo] para a função de loading
 
   if [ $status > 0 ]; then
@@ -122,7 +124,7 @@ function installApt {
 # Recebe por parâmetro [nome_de_instalação] .deb
 function installDeb {
   echo "Program $1:"
-  status=$(dpkg -i $deb) > /dev/null &
+  status=$(dpkg -i $deb 2> /dev/null) &
   loading $! # Envia o [id do processo] para a função de loading
 
   if [ $status > 0 ]; then
@@ -137,7 +139,7 @@ function installDeb {
 function uninstallApt {
   echo "Program $1:"
   if dpkg -l | grep -q $1; then # Só desinstala se estiver instalado
-      status=$(apt remove --purge $1 -y) > /dev/null &
+      status=$(apt remove --purge $1 -y 2> /dev/null) &
       loading $! # Envia o [id do processo] para a função de loading
 
       if [ $status > 0 ]; then
@@ -146,7 +148,7 @@ function uninstallApt {
           printf "\r- Uninstalled             \n"
       fi
   else
-      echo "- Program not found           \n"
+      echo "- Program not found           "
   fi
 }
 
@@ -154,7 +156,7 @@ function uninstallApt {
 # Recebe por parâmetro [nome] do PPA
 function addPPA {
   echo "PPA $1:"
-  status=$(apt-add-repository "$1" -y) > /dev/null &
+  status=$(apt-add-repository "$1" -y 2> /dev/null) &
   loading $! # Envia o [id do processo] para a função de loading
 
   if [ $status > 0 ]; then
@@ -168,7 +170,7 @@ function addPPA {
 # Recebe por parâmetro [url] do programa
 function downloadProgram {
   echo "Download $1:"
-  status=$(wget -c "$url" -P "$DOWNLOADS") > /dev/null &
+  status=$(wget -c "$url" -P "$DOWNLOADS" 2> /dev/null) &
   loading $! # Envia o [id do processo] para a função de loading
 
   if [ $status > 0 ]; then
@@ -178,22 +180,28 @@ function downloadProgram {
   fi
 }
 
+echo "************************************************************************"
+echo "* PREREQUISITS                                                         *"
+echo "************************************************************************"
 ###############################################################################
-# Cria diretórios importantes para o processo                              #
-echo "\nMaking important directories\n"
+# Cria diretórios importantes para o processo                                 #
+echo "Making important directories"
 if [ ! -d "$DOWNLOADS" ]; then
+    echo "- $DOWNLOADS"
     mkdir "$DOWNLOADS"
 fi
 
-if [ ! -d "$APPIMAGE_PATH" ]; then
-    mkdir "$APPIMAGE_PATH"
-fi
-echo "Ready\n"
+# if [ ! -d "$APPIMAGE_PATH" ]; then
+#     mkdir "$APPIMAGE_PATH"
+# fi
+echo "- Ready"
 
 ###############################################################################
-# Remove eventuais travas do APT                                           #
+# Remove eventuais travas do APT                                              #
+echo "Making APT free"
 rm /var/lib/dpkg/lock-frontend
 rm /var/cache/apt/archives/lock
+echo "- Ready"
 
 echo "************************************************************************"
 echo "* UNINSTALL SOME PREINSTALLED PROGRAMS                                 *"
@@ -204,10 +212,10 @@ done
 
 ###############################################################################
 # Limpa o cache das desinstalações                                            #
-echo "\nCleaning cache\n"
+echo "Cleaning cache"
 apt clean
 apt autoremove -y
-echo "\nReady\n"
+echo "Ready"
 
 echo "************************************************************************"
 echo "* PPAs REGISTER                                                        *"
@@ -222,13 +230,24 @@ echo "************************************************************************"
 echo "* UPDATING SYSTEM DEPENCENCIES                                         *"
 echo "************************************************************************"
 echo "APT dependencies"
-apt update -y > /dev/null &
+status=$(apt update -y 2> /dev/null) &
 loading $! # Envia o [id do processo] para a função de loading
-printf "\r- Ready                   \n"
+
+if [ $status > 0 ]; then
+    printf "\r- Not updated          \n"
+else
+    printf "\r- Updated              \n"
+fi
+
 echo "Flatpak dependencies"
-flatpak update -y > /dev/null &
+status=$(flatpak update -y 2> /dev/null) &
 loading $! # Envia o [id do processo] para a função de loading
-printf "\r- Ready                   \n"
+
+if [ $status > 0 ]; then
+    printf "\r- Not updated          \n"
+else
+    printf "\r- Updated              \n"
+fi
 
 ###############################################################################
 # Aceita os termos de instalação das fontes da Microsoft                      #
@@ -282,34 +301,72 @@ echo "************************************************************************"
 echo "* INSTALL COMPOSER                                                     *"
 echo "************************************************************************"
 EXPECTED_CHECKSUM="$(wget -q -O - https://composer.github.io/installer.sig)"
-php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-ACTUAL_CHECKSUM="$(php -r "echo hash_file('sha384', 'composer-setup.php');")"
+echo "Downloading..."
+status=$(php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" 2> /dev/null) &
+loading $!
 
-if [ "$EXPECTED_CHECKSUM" != "$ACTUAL_CHECKSUM" ]; then
-    >&2 echo 'ERROR: Invalid installer checksum'
-    rm composer-setup.php
-    echo "Composer installation failed"
+if [ $status > 0 ]; then
+  printf "\r- Download failed          \n"
+else
+  printf "\r- Download complete        \n"
 fi
 
-php composer-setup.php --install-dir=$DONWLOADS --quiet
-RESULT=$?
+ACTUAL_CHECKSUM="$(php -r "echo hash_file('sha384', 'composer-setup.php');")"
+
+echo "Validating checksum..."
+if [ "$EXPECTED_CHECKSUM" != "$ACTUAL_CHECKSUM" ]; then
+    >&2 echo "- Invalid"
+    rm composer-setup.php
+    exit 1
+else
+    echo "- Ok"
+fi
+
+echo "Making installer..."
+status=$(php composer-setup.php --quiet 2> /dev/null) &
+loading $!
+
+if [ $status > 0 ]; then
+  printf "\r- Operation failed          \n"
+else
+  printf "\r- Operation complete        \n"
+fi
 rm composer-setup.php
-mv "$DOWNLOADS/composer.phar" /usr/local/bin/composer
+
+status=$(mv composer.phar /usr/local/bin/composer 2> /dev/null)
+
+if [ $status > 0 ]; then
+  printf "\r- Not installed globally    \n"
+else
+  printf "\r- installed globally        \n"
+fi
 
 echo "************************************************************************"
 echo "* GIT CONFIGURATION                                                    *"
 echo "************************************************************************"
+echo "Setting global user and e-mail"
 git config --global user.email "$GIT_EMAIL"
 git config --global user.name "$GIT_USER"
+echo "- Ready"
 
 echo "************************************************************************"
 echo "* MYSQL CONFIGURATION                                                  *"
 echo "************************************************************************"
 if [ $(dpkg-query -W -f='${Status}' expect 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
-    echo "Can't find expect. Trying install it..."
-    aptitude -y install expect
-fi
+    echo "Installing expect..."
+    status=$(aptitude -y install expect 2> /dev/null) &
+    loading $! # Envia o [id do processo] para a função de loading
 
+    if [ $status > 0 ]; then
+      printf "\r- Not installed         \n"
+    else
+      printf "\r- Installed             \n"
+    fi
+fi
+echo "Running mysql_secure_installation..."
+#
+# Execution mysql_secure_installation
+#
 SECURE_MYSQL=$(expect -c "
     set timeout 3
     spawn mysql_secure_installation
@@ -333,12 +390,9 @@ SECURE_MYSQL=$(expect -c "
     send \"y\r\"
     expect eof
 ")
-
-#
-# Execution mysql_secure_installation
-#
-echo "${SECURE_MYSQL}"
-
+echo "- Ready"
+# echo "${SECURE_MYSQL}"
+echo "Setting root access..."
 ENABLE_ROOT_BY_PASSWORD=$(expect -c "
     set timeout 3
     spawn mysql
@@ -348,9 +402,17 @@ ENABLE_ROOT_BY_PASSWORD=$(expect -c "
     expect eof
 ")
 
-echo "${ENABLE_ROOT_BY_PASSWORD}"
+# echo "${ENABLE_ROOT_BY_PASSWORD}"
+echo "- Ready"
+echo "Removing expect..."
+status=$(aptitude -y purge expect 2> /dev/null) &
+loading $! # Envia o [id do processo] para a função de loading
 
-aptitude -y purge expect
+if [ $status > 0 ]; then
+  printf "\r- Not uninstalled         \n"
+else
+  printf "\r- Uninstalled             \n"
+fi
 
 echo "************************************************************************"
 echo "* GRUB CONFIGURATION                                                   *"
@@ -363,6 +425,34 @@ update-grub
 echo "************************************************************************"
 echo "* UPGRADE, CLEAN AND ENDING                                            *"
 echo "************************************************************************"
-apt upgrade -y
-apt autoclean
-apt autoremove -y
+echo "Upgrading..."
+status=$(apt upgrade -y 2> /dev/null) &
+loading $! # Envia o [id do processo] para a função de loading
+
+if [ $status > 0 ]; then
+  printf "\r- Not upgraded         \n"
+else
+  printf "\r- Upgraded             \n"
+fi
+
+echo "Cleaning..."
+status=$(apt autoclean 2> /dev/null) &
+loading $! # Envia o [id do processo] para a função de loading
+
+if [ $status > 0 ]; then
+  printf "\r- Not cleaned          \n"
+else
+  printf "\r- Cleaned              \n"
+fi
+
+echo "Erasing unecessary files..."
+status=$(apt autoremove -y 2> /dev/null) &
+loading $! # Envia o [id do processo] para a função de loading
+
+if [ $status > 0 ]; then
+  printf "\r- Not erased           \n"
+else
+  printf "\r- Erased             \n"
+fi
+rm 0
+echo "- All done"
