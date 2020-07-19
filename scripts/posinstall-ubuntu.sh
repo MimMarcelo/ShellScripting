@@ -39,8 +39,7 @@ PROGRAMS_TO_UNINSTALL=(
 )
 APT_PROGRAMS=(
     software-properties-common
-    gnome-tweak-tool
-    gnome-shell-extensions
+    gnome-tweak-tool gnome-shell-extensions chrome-gnome-shell
     numix-blue-gtk-theme
     nemo nemo-python nemo-fileroller nemo-data
     breeze frei0r-plugins
