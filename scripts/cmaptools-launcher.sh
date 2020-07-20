@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Marcelo Júnior (MimMarcelo), https://github.com/MimMarcelo/
-BASE="/opt/CmapTools"
+BASE="/opt/cmaptools"
 CMAP="$BASE/CmapTools"
 CMAP_IMAGE="$BASE/cmap-logo.png"
 if ! test -f $CMAP ; then
