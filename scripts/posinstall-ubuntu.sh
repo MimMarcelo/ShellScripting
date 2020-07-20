@@ -28,8 +28,6 @@ DOWNLOADS="/home/marcelo/Downloads/programs" # Pasta onde os baixar os programas
 ###############################################################################
 # Define as listas                                                            #
 PROGRAMS_TO_UNINSTALL=(
-    nautilus
-    nautilus*
 )
 APT_PROGRAMS=(
     software-properties-common
@@ -71,11 +69,13 @@ FLATPAK_PROGRAMS=(
 PPAs=(
     ppa:ondrej/php
     ppa:graphics-drivers/ppa
-    ppa:webupd8team/nemo
+    ppa:embrosyn/cinnamon
 )
+# ppa:webupd8team/nemo
 
 URLs=(
     https://download.virtualbox.org/virtualbox/6.1.12/Oracle_VM_VirtualBox_Extension_Pack-6.1.12.vbox-extpack
+    https://dev.mysql.com/get/Downloads/MySQLGUITools/mysql-workbench-community_8.0.21-1ubuntu20.04_amd64.deb
 )
 
 ###############################################################################
@@ -210,6 +210,7 @@ echo "************************************************************************"
 for program in ${PROGRAMS_TO_UNINSTALL[@]}; do
     uninstallApt $program
 done
+snap remove snap-store
 
 ###############################################################################
 # Limpa o cache das desinstalações                                            #
@@ -230,7 +231,7 @@ wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
 
 echo "Insync baselines..."
 sh -c 'echo "deb http://apt.insync.io/ubuntu focal non-free contrib" >> /etc/apt/sources.list.d/insync.list'
-wget -q -O - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys ACCAF35C | apt-key add -
+apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys ACCAF35C
 
 echo "Virtual Box baselines..."
 sh -c 'echo "deb [arch=amd64] https://download.virtualbox.org/virtualbox/debian focal contrib" >> /etc/apt/sources.list.d/virtualbox.list'
@@ -308,6 +309,8 @@ echo "************************************************************************"
 xdg-mime default nemo.desktop inode/directory application/x-gnome-saved-search
 gsettings set org.gnome.desktop.background show-desktop-icons false
 gsettings set org.nemo.desktop show-desktop-icons true
+sudo apt remove nautilus
+sudo apt remove nautilus*
 
 echo "************************************************************************"
 echo "* INSTALL COMPOSER                                                     *"
@@ -353,13 +356,14 @@ else
   printf "\r- installed globally        \n"
 fi
 
-echo "************************************************************************"
-echo "* GIT CONFIGURATION                                                    *"
-echo "************************************************************************"
-echo "Setting global user and e-mail"
-git config --global user.email "rokermarcelo@gmail.com"
-git config --global user.name "Marcelo Júnior"
-echo "- Ready"
+# Doesn't work
+# echo "************************************************************************"
+# echo "* GIT CONFIGURATION                                                    *"
+# echo "************************************************************************"
+# echo "Setting global user and e-mail"
+# git config --global user.email "rokermarcelo@gmail.com"
+# git config --global user.name "Marcelo Júnior"
+# echo "- Ready"
 
 echo "************************************************************************"
 echo "* MYSQL CONFIGURATION                                                  *"
@@ -394,7 +398,7 @@ SECURE_MYSQL=$(expect -c "
     send \"y\r\"
     expect \"Remove anonymous users? (Press y|Y for Yes, any other key for No) :\"
     send \"y\r\"
-    expect \"RDisallow root login remotely? (Press y|Y for Yes, any other key for No) :\"
+    expect \"Disallow root login remotely? (Press y|Y for Yes, any other key for No) :\"
     send \"y\r\"
     expect \"Remove test database and access to it? (Press y|Y for Yes, any other key for No) :\"
     send \"y\r\"
