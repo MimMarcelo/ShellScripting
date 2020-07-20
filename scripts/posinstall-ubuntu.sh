@@ -28,26 +28,25 @@ DOWNLOADS="/home/marcelo/Downloads/programs" # Pasta onde os baixar os programas
 ###############################################################################
 # Define as listas                                                            #
 PROGRAMS_TO_UNINSTALL=(
-    libreoffice-core
-    gimp
-    inkscape
-    memtest86+
-    celluloid
-    gnote
-    redshift
-    rhythmbox
+    nautilus
+    nautilus*
 )
 APT_PROGRAMS=(
     software-properties-common
-    gnome-tweak-tool gnome-shell-extensions chrome-gnome-shell
+    gnome-tweak-tool chrome-gnome-shell
     numix-blue-gtk-theme
     nemo nemo-python nemo-fileroller nemo-data
     breeze frei0r-plugins
-    mysql-server
+    mysql-server mysql-workbench-community
     php php-curl php-mbstring php-mysql php-sqlite3 phpunit
     git
     libc6:i386 libncurses5:i386 libstdc++6:i386 lib32z1 libbz2-1.0:i386
     ttf-mscorefonts-installer
+    flatpak gnome-software-plugin-flatpak
+    insync
+    google-chrome-stable
+    virtualbox-6.1
+    -f
 )
 
 FLATPAK_PROGRAMS=(
@@ -65,19 +64,18 @@ FLATPAK_PROGRAMS=(
     org.libreoffice.LibreOffice
     org.kde.kdenlive
     io.atom.Atom
+    org.texstudio.TeXstudio
+    com.syntevo.SmartGit
 )
 
 PPAs=(
     ppa:ondrej/php
     ppa:graphics-drivers/ppa
+    ppa:webupd8team/nemo
 )
 
 URLs=(
-    https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-    https://d2t3ff60b2tol4.cloudfront.net/builds/insync_3.0.20.40428-bionic_amd64.deb
-    https://download.virtualbox.org/virtualbox/6.1.8/virtualbox-6.1_6.1.8-137981~Ubuntu~eoan_amd64.deb
-    https://download.virtualbox.org/virtualbox/6.1.8/Oracle_VM_VirtualBox_Extension_Pack-6.1.8.vbox-extpack
-    http://cdn.mysql.com/Downloads/MySQLGUITools/mysql-workbench-community_8.0.20-1ubuntu20.04_amd64.deb
+    https://download.virtualbox.org/virtualbox/6.1.12/Oracle_VM_VirtualBox_Extension_Pack-6.1.12.vbox-extpack
 )
 
 ###############################################################################
@@ -226,24 +224,26 @@ echo "************************************************************************"
 for ppa in ${PPAs[@]}; do
     addPPA $ppa
 done
+echo "Chrome baselines..."
+sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
+wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
+
+echo "Insync baselines..."
+sh -c 'echo "deb http://apt.insync.io/ubuntu focal non-free contrib" >> /etc/apt/sources.list.d/insync.list'
+wget -q -O - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys ACCAF35C | apt-key add -
+
+echo "Virtual Box baselines..."
+sh -c 'echo "deb [arch=amd64] https://download.virtualbox.org/virtualbox/debian focal contrib" >> /etc/apt/sources.list.d/virtualbox.list'
+wget -q -O - https://www.virtualbox.org/download/oracle_vbox_2016.asc | apt-key add -
+wget -q -O - https://www.virtualbox.org/download/oracle_vbox.asc | apt-key add -
 
 ###############################################################################
-# Atualização das dependências do sistema                                     #
+# Atualização das dependências do APT                                     #
 echo "************************************************************************"
-echo "* UPDATING SYSTEM DEPENCENCIES                                         *"
+echo "* UPDATING APT DEPENCENCIES                                            *"
 echo "************************************************************************"
 echo "APT dependencies"
 status=$(apt update -y 2> /dev/null) &
-loading $! # Envia o [id do processo] para a função de loading
-
-if [ $status > 0 ]; then
-    printf "\r- Not updated          \n"
-else
-    printf "\r- Updated              \n"
-fi
-
-echo "Flatpak dependencies"
-status=$(flatpak update -y 2> /dev/null) &
 loading $! # Envia o [id do processo] para a função de loading
 
 if [ $status > 0 ]; then
@@ -263,6 +263,21 @@ for program in ${APT_PROGRAMS[@]}; do
     installApt $program
 done
 
+###############################################################################
+# Atualização das dependências do flatpak                                     #
+echo "************************************************************************"
+echo "* UPDATING FLATPAK DEPENCENCIES                                        *"
+echo "************************************************************************"
+flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+echo "Flatpak dependencies"
+status=$(flatpak update -y 2> /dev/null) &
+loading $! # Envia o [id do processo] para a função de loading
+
+if [ $status > 0 ]; then
+    printf "\r- Not updated          \n"
+else
+    printf "\r- Updated              \n"
+fi
 
 echo "************************************************************************"
 echo "* INSTALL FLATPAK PROGRAMS                                             *"
@@ -293,7 +308,6 @@ echo "************************************************************************"
 xdg-mime default nemo.desktop inode/directory application/x-gnome-saved-search
 gsettings set org.gnome.desktop.background show-desktop-icons false
 gsettings set org.nemo.desktop show-desktop-icons true
-sudo apt-get remove --auto-remove nautilus nautilus*
 
 echo "************************************************************************"
 echo "* INSTALL COMPOSER                                                     *"
@@ -343,8 +357,8 @@ echo "************************************************************************"
 echo "* GIT CONFIGURATION                                                    *"
 echo "************************************************************************"
 echo "Setting global user and e-mail"
-git config --global user.email "$GIT_EMAIL"
-git config --global user.name "$GIT_USER"
+git config --global user.email "rokermarcelo@gmail.com"
+git config --global user.name "Marcelo Júnior"
 echo "- Ready"
 
 echo "************************************************************************"
@@ -415,14 +429,16 @@ fi
 echo "************************************************************************"
 echo "* GRUB CONFIGURATION                                                   *"
 echo "************************************************************************"
-sed -e "s/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/" -e "s/#GRUB_DISABLE_RECOVERY=.*/GRUB_DISABLE_RECOVERY=\"true\"\nGRUB_DISABLE_SUBMENU=\"y\"/" "$GRUB" >"$DOWNLOADS/grub"
-cp "$GRUB" "$GRUB.original"
-mv "$DOWNLOADS/grub" "$GRUB"
-update-grub
+# sed -e "s/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/" -e "s/#GRUB_DISABLE_RECOVERY=.*/GRUB_DISABLE_RECOVERY=\"true\"\nGRUB_DISABLE_SUBMENU=\"y\"/" "$GRUB" >"$DOWNLOADS/grub"
+# cp "$GRUB" "$GRUB.original"
+# mv "$DOWNLOADS/grub" "$GRUB"
+# update-grub
 
 echo "************************************************************************"
 echo "* UPGRADE, CLEAN AND ENDING                                            *"
 echo "************************************************************************"
+dpkg --configure -a
+apt --fix-broken install -y
 echo "Upgrading..."
 status=$(apt upgrade -y 2> /dev/null) &
 loading $! # Envia o [id do processo] para a função de loading
