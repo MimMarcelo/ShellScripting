@@ -61,10 +61,6 @@ FLATPAK_PROGRAMS=(
     com.syntevo.SmartGit
 )
 
-DNF_MANAGER=(
-    google-chrome
-)
-
 ###############################################################################
 # Define as funções                                                           #
 
@@ -78,20 +74,6 @@ function loading {
     printf "\r- Loading [${spin:$i:1}]"
     sleep .1
   done
-}
-
-# Adiciona DNF-Manager
-# Recebe por parâmetro [nome] do DNF-Manager
-function addDNFManager {
-  echo "DNF $1:"
-  status=$(dnf config-manager --set-enabled $1 -y 2> /dev/null) &
-  loading $! # Envia o [id do processo] para a função de loading
-
-  if [ $status > 0 ]; then
-      printf "\r- Not added         \n"
-  else
-      printf "\r- Added             \n"
-  fi
 }
 
 # Instala programa DNF
@@ -129,12 +111,13 @@ echo "************************************************************************"
 echo "************************************************************************"
 echo "* DNF_MANAGER REGISTER                                                 *"
 echo "************************************************************************"
-for dnf in ${DNF_MANAGER[@]}; do
-    addDNFManager $dnf
-done
+dnf config-manager --set-enabled fedora-extras -y
+
+echo "Google Chrome baselines..."
+dnf config-manager --set-enabled google-chrome -y
 
 echo "Insync baselines..."
-sudo rpm --import https://d2t3ff60b2tol4.cloudfront.net/repomd.xml.key
+rpm --import https://d2t3ff60b2tol4.cloudfront.net/repomd.xml.key -y
 sh -c 'echo -e "[insync]\nname=insync repo\nbaseurl=http://yum.insync.io/fedora/\$releasever/\ngpgcheck=1\ngpgkey=https://d2t3ff60b2tol4.cloudfront.net/repomd.xml.key\nenabled=1\nmetadata_expire=120m" >> /etc/yum.repos.d/insync.repo'
 
 ###############################################################################
@@ -186,8 +169,8 @@ echo "************************************************************************"
 echo "* REPLACE NAUTILUS WITH NEMO                                           *"
 echo "************************************************************************"
 xdg-mime default nemo.desktop inode/directory
-uninstallDNF nautilus
-uninstallDNF nautilus*
+dnf remove nautilus -y
+dnf remove nautilus* -y
 echo "Please, configure Nemo as follows:                                     *"
 echo " 1 - Open Alacarte (Main Menu)                                         *"
 echo " 2 - Select 'Acessories' > 'New Item'                                  *"
