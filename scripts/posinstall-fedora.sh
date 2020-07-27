@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+###############################################################################
 # Marcelo Júnior (MimMarcelo), https://github.com/MimMarcelo/ShellScripting
 
 # Para adicionar no futuro:
@@ -9,26 +10,18 @@
 # - Instalação do MySQL Server
 # - Configuração do MySQL Server
 # - Adicionar opções como: --version, -dualboot=true/false
-# - Revisar comentários e instruções (Padronizar saídas)
+# - Verificação de status das instalações não está funcionando
+# - Revisar comentários
 
 ###############################################################################
-# Verifica se o script está sendo executado como sudo                         #
-if [[ $EUID -ne 0 ]]; then
-   echo "This script must be run as root" 1>&2
-   exit 1
-fi
+# Define as variáveis
 
-###############################################################################
-# Define as variáveis                                                         #
 spin='-\|/' # Utilizado na função [loading], representa o carregamento
 
-GIT_EMAIL="rokermarcelo@gmail.com"   # e-mail global do Git
-GIT_USER="Marcelo Júnior"            # Usuário global do Git
-
-DOWNLOADS="/tmp/pos-install-programs" # Pasta onde os baixar os programas
+# status=0
 
 ###############################################################################
-# Define as listas                                                            #
+# Define as listas
 
 DNF_PROGRAMS=(
     fedora-workstation-repositories
@@ -62,7 +55,7 @@ FLATPAK_PROGRAMS=(
 )
 
 ###############################################################################
-# Define as funções                                                           #
+# Define as funções
 
 # Exibe elemento alusivo ao carregamento do processo
 # Recebe por parâmetro [$!] do processo
@@ -71,7 +64,7 @@ function loading {
   while kill -0 $1 2>/dev/null
   do
     i=$(( (i+1) %4 ))
-    printf "\r- Loading [${spin:$i:1}]"
+    printf "\r- loading [${spin:$i:1}]"
     sleep .1
   done
 }
@@ -84,9 +77,9 @@ function installDNF {
   loading $! # Envia o [id do processo] para a função de loading
 
   if [ $status > 0 ]; then
-      printf "\r- Not installed         \n"
+      printf "\r- [FAILURE]                                                  \n"
   else
-      printf "\r- Installed             \n"
+      printf "\r-[OK]                                                        \n"
   fi
 }
 
@@ -98,116 +91,157 @@ function installFlatpak {
   loading $! # Envia o [id do processo] para a função de loading
 
   if [ $status > 0 ]; then
-      printf "\r- Not installed         \n"
+      printf "\r- [FAILURE]                                                  \n"
   else
-      printf "\r- Installed             \n"
+      printf "\r-[OK]                                                        \n"
   fi
 }
 
-echo "************************************************************************"
-echo "* PREREQUISITS                                                         *"
-echo "************************************************************************"
-
-echo "************************************************************************"
-echo "* DNF_MANAGER REGISTER                                                 *"
-echo "************************************************************************"
-dnf config-manager --set-enabled fedora-extras -y
-
-echo "Google Chrome baselines..."
-dnf config-manager --set-enabled google-chrome -y
-
-echo "Insync baselines..."
-rpm --import https://d2t3ff60b2tol4.cloudfront.net/repomd.xml.key -y
-sh -c 'echo -e "[insync]\nname=insync repo\nbaseurl=http://yum.insync.io/fedora/\$releasever/\ngpgcheck=1\ngpgkey=https://d2t3ff60b2tol4.cloudfront.net/repomd.xml.key\nenabled=1\nmetadata_expire=120m" >> /etc/yum.repos.d/insync.repo'
-
 ###############################################################################
-# Atualização das dependências do DNF                                         #
+# Pré-requisitos para execução
+echo ""
 echo "************************************************************************"
-echo "* UPDATING DNF DEPENCENCIES                                            *"
-echo "************************************************************************"
-echo "DNF dependencies"
+echo "* PREREQUISITS"
+
+# Verifica se o script está sendo executado como sudo
+echo "root user"
+if [ $EUID -ne 0 ]; then
+   printf "\r- [FAILURE]: This script must be run as root                    \n"
+   exit 1
+else
+   printf "\r- [OK]                                                          \n"
+fi
+
+# Habilita o gerenciador DNF fedora-extras
+echo "Manager fedora-extras"
+status=$(dnf config-manager --set-enabled fedora-extras -y 2> /dev/null) &
+loading $! # Envia o [id do processo] para a função de loading
+
+if [ $status -gt 0 ]; then
+    printf "\r- [FAILURE]                                                    \n"
+else
+    printf "\r- [OK]                                                         \n"
+fi
+
+echo "Manager google-chrome"
+status=$(dnf config-manager --set-enabled google-chrome -y 2> /dev/null) &
+loading $! # Envia o [id do processo] para a função de loading
+
+if [ $status -gt 0 ]; then
+    printf "\r- [FAILURE]                                                    \n"
+else
+    printf "\r- [OK]                                                         \n"
+fi
+
+echo "Key Insync"
+status=$(rpm --import https://d2t3ff60b2tol4.cloudfront.net/repomd.xml.key -y 2> /dev/null) &
+loading $! # Envia o [id do processo] para a função de loading
+
+if [ $status -gt 0 ]; then
+    printf "\r- [FAILURE]                                                    \n"
+else
+    printf "\r- [OK]                                                         \n"
+fi
+
+echo "Repository Insync"
+sh -c 'echo -e "[insync]\nname=insync repo\nbaseurl=http://yum.insync.io/fedora/\$releasever/\ngpgcheck=1\ngpgkey=https://d2t3ff60b2tol4.cloudfront.net/repomd.xml.key\nenabled=1\nmetadata_expire=120m" >> /etc/yum.repos.d/insync.repo'
+printf "\r- [OK]                                                             \n"
+
+echo "Update DNF dependencies"
 status=$(dnf update -y 2> /dev/null) &
 loading $! # Envia o [id do processo] para a função de loading
 
-if [ $status > 0 ]; then
-    printf "\r- Not updated          \n"
+if [ $status -gt 0 ]; then
+    printf "\r- [FAILURE]                                                    \n"
 else
-    printf "\r- Updated              \n"
+    printf "\r- [OK]                                                         \n"
 fi
 
+echo "Update Flatpak dependencies"
+flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+status=$(flatpak update -y 2> /dev/null) &
+loading $! # Envia o [id do processo] para a função de loading
+
+if [ $status -gt 0 ]; then
+    printf "\r- [FAILURE]                                                    \n"
+else
+    printf "\r- [OK]                                                         \n"
+fi
+
+echo ""
 echo "************************************************************************"
-echo "* INSTALL DNF PROGRAMS                                                 *"
-echo "************************************************************************"
+echo "* INSTALL DNF PROGRAMS"
 for program in ${DNF_PROGRAMS[@]}; do
     installDNF $program
 done
 
-###############################################################################
-# Atualização das dependências do flatpak                                     #
+echo ""
 echo "************************************************************************"
-echo "* UPDATING FLATPAK DEPENCENCIES                                        *"
-echo "************************************************************************"
-flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-echo "Flatpak dependencies"
-status=$(flatpak update -y 2> /dev/null) &
-loading $! # Envia o [id do processo] para a função de loading
-
-if [ $status > 0 ]; then
-    printf "\r- Not updated          \n"
-else
-    printf "\r- Updated              \n"
-fi
-
-echo "************************************************************************"
-echo "* INSTALL FLATPAK PROGRAMS                                             *"
-echo "************************************************************************"
+echo "* INSTALL FLATPAK PROGRAMS"
 for program in ${FLATPAK_PROGRAMS[@]}; do
     installFlatpak $program
 done
 
-echo "************************************************************************"
-echo "* REPLACE NAUTILUS WITH NEMO                                           *"
-echo "************************************************************************"
-xdg-mime default nemo.desktop inode/directory
-dnf remove nautilus -y
-dnf remove nautilus* -y
-echo "Please, configure Nemo as follows:                                     *"
-echo " 1 - Open Alacarte (Main Menu)                                         *"
-echo " 2 - Select 'Acessories' > 'New Item'                                  *"
-echo " 3 - Set:                                                              *"
-echo " 3.1 - name as 'Nemo';                                                 *"
-echo " 3.2 - command as '/usr/bin/nemo'                                      *"
-echo " 3.3 - image as '/usr/share/icons/gnome/256x256/places/folder.png'     *"
 echo ""
 echo "************************************************************************"
-echo "* GIT CONFIGURATION                                                    *"
+echo "* REPLACE NAUTILUS WITH NEMO"
+xdg-mime default nemo.desktop inode/directory
+
+echo "Remove Nautilus"
+status=$(dnf remove nautilus -y 2> /dev/null) &
+loading $! # Envia o [id do processo] para a função de loading
+
+if [ $status -gt 0 ]; then
+    printf "\r- [FAILURE]                                                    \n"
+else
+    printf "\r- [OK]                                                         \n"
+fi
+
+echo "Remove Nautilus*"
+status=$(dnf remove nautilus* -y 2> /dev/null) &
+loading $! # Envia o [id do processo] para a função de loading
+
+if [ $status -gt 0 ]; then
+    printf "\r- [FAILURE]                                                    \n"
+else
+    printf "\r- [OK]                                                         \n"
+fi
+
+echo ""
 echo "************************************************************************"
-echo "Setting global user and e-mail"
-git config --global user.email $GIT_EMAIL
-git config --global user.name $GIT_USER
-echo "- Ready"
+echo "Please, configure Nemo as follows:"
+echo " 1 - Open Alacarte (Main Menu)"
+echo " 2 - Select 'Acessories' > 'New Item'"
+echo " 3 - Set:"
+echo " 3.1 - name as 'Nemo'"
+echo " 3.2 - command as '/usr/bin/nemo'"
+echo " 3.3 - image as '/usr/share/icons/gnome/256x256/places/folder.png'"
+echo ""
+echo "************************************************************************"
+echo "Please, configure Git as follows:"
+echo " 1 - git config --global user.email 'GIT_EMAIL'"
+echo " 2 - git config --global user.name 'GIT_USER'"
 
 echo "************************************************************************"
-echo "* UPGRADE, CLEAN AND ENDING                                            *"
-echo "************************************************************************"
-echo "Ugrading..."
+echo "* UPGRADE, CLEAN AND ENDING"
+echo "Ugrade"
 status=$(dnf upgrade -y 2> /dev/null) &
 loading $! # Envia o [id do processo] para a função de loading
 
-if [ $status > 0 ]; then
-  printf "\r- Not cleaned          \n"
+if [ $status -gt 0 ]; then
+    printf "\r- [FAILURE]                                                    \n"
 else
-  printf "\r- Cleaned              \n"
+    printf "\r- [OK]                                                         \n"
 fi
 
-echo "Cleaning..."
+echo "Clean"
 status=$(dnf clean packages -y 2> /dev/null) &
 loading $! # Envia o [id do processo] para a função de loading
 
-if [ $status > 0 ]; then
-  printf "\r- Not cleaned          \n"
+if [ $status -gt 0 ]; then
+    printf "\r- [FAILURE]                                                    \n"
 else
-  printf "\r- Cleaned              \n"
+    printf "\r- [OK]                                                         \n"
 fi
 
 rm 0
