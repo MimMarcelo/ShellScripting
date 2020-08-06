@@ -34,6 +34,7 @@ DNF_PROGRAMS=(
     php php-curl php-mysql php-sqlite3 phpunit
     composer
     insync
+    https://downloads.sourceforge.net/project/mscorefonts2/rpms/msttcore-fonts-installer-2.6-1.noarch.rpm
 )
 
 FLATPAK_PROGRAMS=(
