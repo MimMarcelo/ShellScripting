@@ -13,6 +13,8 @@ fi
 # Define as variáveis                                                         #
 spin='-\|/' # Utilizado na função [loading], representa o carregamento
 
+SYSTEM_NAME=$(lsb_release -sc);
+
 GIT_EMAIL="rokermarcelo@gmail.com"   # e-mail global do Git
 GIT_USER="Marcelo Júnior"            # Usuário global do Git
 
@@ -29,46 +31,47 @@ DOWNLOADS="/tmp/install-programs" # Pasta onde os baixar os programas
 # Define as listas                                                            #
 PROGRAMS_TO_UNINSTALL=(
   apache2
+  libreoffice
 )
+
 APT_PROGRAMS=(
+    build-essential dkms linux-headers-$(uname -r)
     software-properties-common
     breeze frei0r-plugins
-    mysql-server
+    adoptopenjdk-8-hotspot
+    mariadb-server
     php php-curl php-mbstring php-mysql php-sqlite3 phpunit
     git
     flatpak gnome-software-plugin-flatpak
-    inkscape
     insync
     google-chrome-stable
-    -f
+    virtualbox-6.1
+    vlc
+    composer
+    aptitude
 )
 
 FLATPAK_PROGRAMS=(
     com.google.AndroidStudio
-    com.obsproject.Studio
-    org.apache.netbeans
+    io.atom.Atom
     org.audacityteam.Audacity
     org.gimp.GIMP
+    org.inkscape.Inkscape
+    org.kde.kdenlive
+    org.libreoffice.LibreOffice
+    com.obsproject.Studio
+    org.apache.netbeans
     com.getpostman.Postman
     com.spotify.Client
     org.stellarium.Stellarium
     com.sweethome3d.Sweethome3d
-    org.videolan.VLC
-    org.kde.kdenlive
-    io.atom.Atom
-    org.texstudio.TeXstudio
-    com.syntevo.SmartGit
-)
-
-PPAs=(
-    ppa:ondrej/php
-    ppa:graphics-drivers/ppa
 )
 
 URLs=(
     https://dev.mysql.com/get/Downloads/MySQLGUITools/mysql-workbench-community_8.0.21-1ubuntu18.04_amd64.deb
-    https://dev.mysql.com/get/mysql-apt-config_0.8.13-1_all.deb
     http://ftp.br.debian.org/debian/pool/contrib/m/msttcorefonts/ttf-mscorefonts-installer_3.7_all.deb
+    http://iriun.gitlab.io/iriunwebcam.deb
+    https://cdn.change-vision.com/files/astah-uml_8.2.0.b743f7-0_all.deb
 )
 
 ###############################################################################
@@ -148,17 +151,17 @@ function uninstallApt {
 
 # Adiciona PPA
 # Recebe por parâmetro [nome] do PPA
-function addPPA {
-  echo "PPA $1:"
-  status=$(apt-add-repository "$1" -y 2> /dev/null) &
-  loading $! # Envia o [id do processo] para a função de loading
-
-  if [ $status > 0 ]; then
-      printf "\r- Not added         \n"
-  else
-      printf "\r- Added             \n"
-  fi
-}
+# function addPPA {
+#   echo "PPA $1:"
+#   status=$(apt-add-repository "$1" -y 2> /dev/null) &
+#   loading $! # Envia o [id do processo] para a função de loading
+#
+#   if [ $status > 0 ]; then
+#       printf "\r- Not added         \n"
+#   else
+#       printf "\r- Added             \n"
+#   fi
+# }
 
 # Baixa programa
 # Recebe por parâmetro [url] do programa
@@ -185,9 +188,6 @@ if [ ! -d "$DOWNLOADS" ]; then
     mkdir "$DOWNLOADS"
 fi
 
-# if [ ! -d "$APPIMAGE_PATH" ]; then
-#     mkdir "$APPIMAGE_PATH"
-# fi
 echo "- Ready"
 
 ###############################################################################
@@ -214,16 +214,29 @@ echo "Ready"
 echo "************************************************************************"
 echo "* PPAs REGISTER                                                        *"
 echo "************************************************************************"
-for ppa in ${PPAs[@]}; do
-    addPPA $ppa
-done
+# for ppa in ${PPAs[@]}; do
+#     addPPA $ppa
+# done
 echo "Chrome baselines..."
 sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
-wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
+wget -qO - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
 
 echo "Insync baselines..."
 sh -c 'echo "deb http://apt.insync.io/debian buster non-free contrib" >> /etc/apt/sources.list.d/insync.list'
 apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys ACCAF35C
+
+echo "VirtualBox baselines..."
+sh -c 'echo "deb [arch=amd64] https://download.virtualbox.org/virtualbox/debian buster contrib" >> /etc/apt/sources.list.d/virtualbox.list'
+wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | apt-key add -
+wget -q https://www.virtualbox.org/download/oracle_vbox.asc -O- | apt-key add -
+
+echo "Java 1.8 para o Astah..."
+wget -qO - https://adoptopenjdk.jfrog.io/adoptopenjdk/api/gpg/key/public | sudo apt-key add -
+sudo add-apt-repository --yes https://adoptopenjdk.jfrog.io/adoptopenjdk/deb/
+
+echo "PHP mais recente..."
+wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
+sh -c 'echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" >> /etc/apt/sources.list.d/sury-php.list'
 
 # Este passo de download deve ser antes do apt update, pois BAIXA o arquivo
 # de configuração do repositório do MySQL
@@ -234,6 +247,8 @@ mkdir $DOWNLOADS
 for url in ${URLs[@]}; do
     downloadProgram $url
 done
+
+apt --fix-broken install -y
 
 # Este passo de download deve ser antes do apt update, pois INSTALA o arquivo
 # de configuração do repositório do MySQL
@@ -291,62 +306,91 @@ for program in ${FLATPAK_PROGRAMS[@]}; do
 done
 
 echo "************************************************************************"
-echo "* INSTALL COMPOSER                                                     *"
-echo "************************************************************************"
-EXPECTED_CHECKSUM="$(wget -q -O - https://composer.github.io/installer.sig)"
-echo "Downloading..."
-status=$(php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" 2> /dev/null) &
-loading $!
-
-if [ $status > 0 ]; then
-  printf "\r- Download failed          \n"
-else
-  printf "\r- Download complete        \n"
-fi
-
-ACTUAL_CHECKSUM="$(php -r "echo hash_file('sha384', 'composer-setup.php');")"
-
-echo "Validating checksum..."
-if [ "$EXPECTED_CHECKSUM" != "$ACTUAL_CHECKSUM" ]; then
-    >&2 echo "- Invalid"
-    rm composer-setup.php
-    exit 1
-else
-    echo "- Ok"
-fi
-
-echo "Making installer..."
-status=$(php composer-setup.php --quiet 2> /dev/null) &
-loading $!
-
-if [ $status > 0 ]; then
-  printf "\r- Operation failed          \n"
-else
-  printf "\r- Operation complete        \n"
-fi
-rm composer-setup.php
-
-status=$(mv composer.phar /usr/local/bin/composer 2> /dev/null)
-
-if [ $status > 0 ]; then
-  printf "\r- Not installed globally    \n"
-else
-  printf "\r- installed globally        \n"
-fi
-
-echo "************************************************************************"
 echo "* GIT CONFIGURATION                                                    *"
 echo "************************************************************************"
 echo "Setting global user and e-mail"
-git config --global user.email "rokermarcelo@gmail.com"
-git config --global user.name "Marcelo Júnior"
+sudo -H -u marcelo git config --global user.email "$GIT_EMAIL"
+sudo -H -u marcelo git config --global user.name "$GIT_USER"
 echo "- Ready"
+
+echo "************************************************************************"
+echo "* MYSQL CONFIGURATION                                                  *"
+echo "************************************************************************"
+if [ $(dpkg-query -W -f='${Status}' expect 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+    echo "Installing expect..."
+    status=$(aptitude -y install expect 2> /dev/null) &
+    loading $! # Envia o [id do processo] para a função de loading
+
+    if [ $status > 0 ]; then
+      printf "\r- Not installed         \n"
+    else
+      printf "\r- Installed             \n"
+    fi
+fi
+echo "Running mysql_secure_installation..."
+#
+# Execution mysql_secure_installation
+#
+SECURE_MYSQL=$(expect -c "
+    set timeout 3
+    spawn mysql_secure_installation
+    expect \"Press y|Y for Yes, any other key for No:\"
+    send \"y\r\"
+    expect \"Please enter 0 = LOW, 1 = MEDIUM and 2 = STRONG:\"
+    send \"2\r\"
+    expect \"New password:\"
+    send \"$MYSQL_ROOT_PASSWORD\r\"
+    expect \"Re-enter new password:\"
+    send \"$MYSQL_ROOT_PASSWORD\r\"
+    expect \"Do you wish to continue with the password provided?(Press y|Y for Yes, any other key for No) :\"
+    send \"y\r\"
+    expect \"Remove anonymous users? (Press y|Y for Yes, any other key for No) :\"
+    send \"y\r\"
+    expect \"Disallow root login remotely? (Press y|Y for Yes, any other key for No) :\"
+    send \"y\r\"
+    expect \"Remove test database and access to it? (Press y|Y for Yes, any other key for No) :\"
+    send \"y\r\"
+    expect \"Reload privilege tables now? (Press y|Y for Yes, any other key for No) :\"
+    send \"y\r\"
+    expect eof
+")
+echo "- Ready"
+# echo "${SECURE_MYSQL}"
+echo "Setting root access..."
+ENABLE_ROOT_BY_PASSWORD=$(expect -c "
+    set timeout 3
+    spawn mysql
+    send \"ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '${MYSQL_ROOT_PASSWORD}';\r\"
+    send \"FLUSH PRIVILEGES;\r\"
+    send \"exit;\r\"
+    expect eof
+")
+
+# echo "${ENABLE_ROOT_BY_PASSWORD}"
+echo "- Ready"
+echo "Removing expect..."
+status=$(aptitude -y purge expect 2> /dev/null) &
+loading $! # Envia o [id do processo] para a função de loading
+
+if [ $status > 0 ]; then
+  printf "\r- Not uninstalled         \n"
+else
+  printf "\r- Uninstalled             \n"
+fi
+
+echo "************************************************************************"
+echo "* GRUB CONFIGURATION                                                   *"
+echo "************************************************************************"
+sed -e "s/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=0/" -e "s/#GRUB_DISABLE_RECOVERY=.*/GRUB_DISABLE_RECOVERY=\"true\"\nGRUB_DISABLE_SUBMENU=\"y\"/" "$GRUB" >"$DOWNLOADS/grub"
+cp "$GRUB" "$GRUB.original"
+mv "$DOWNLOADS/grub" "$GRUB"
+update-grub
 
 echo "************************************************************************"
 echo "* UPGRADE, CLEAN AND ENDING                                            *"
 echo "************************************************************************"
 dpkg --configure -a
-apt --fix-broken install -y
+
 echo "Upgrading..."
 status=$(apt upgrade -y 2> /dev/null) &
 loading $! # Envia o [id do processo] para a função de loading
@@ -377,4 +421,5 @@ else
   printf "\r- Erased             \n"
 fi
 rm 0
+rm $DOWNLOADS
 echo "- All done"
