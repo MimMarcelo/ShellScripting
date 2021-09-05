@@ -245,4 +245,13 @@ else
     printf "\r- [OK]                                                         \n"
 fi
 
+echo "************************************************************************"
+echo "* CREATE SYMBOLIC LINKS"
+ln -s ~/Insync/Documents/ Documents/_Documents
+ln -s ~/Insync/Music/ Music/_Music
+ln -s ~/Insync/Pictures/ Pictures/_Pictures
+ln -s ~/Insync/Projects/ Projects/_Projects
+ln -s ~/Insync/Videos/ Videos/_Videos
+ln -s ~/Insync/Games/ Games/_Games
+
 rm 0
