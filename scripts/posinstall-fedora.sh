@@ -254,4 +254,7 @@ ln -s ~/Insync/Projects/ Projects/_Projects
 ln -s ~/Insync/Videos/ Videos/_Videos
 ln -s ~/Insync/Games/ Games/_Games
 
+echo "************************************************************************"
+echo "* FORMATE TERMINAL"
+echo PS1=\"\[\e[1;32m\]\u@\h \[\e[37m\]\w $ \[\e[0;37m\]\" >> ~/.bashrc
 rm 0
