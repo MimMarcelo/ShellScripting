@@ -5,8 +5,7 @@
 
 # Para adicionar no futuro:
 # - Configuração do usuário global do Git está funcionando?
-# - Aparentemente o Fedora apresenta a tela de GRUB mesmo sendo o único
-#   Sistema instalado, averiguar configurações de GRUB
+# - Instalação do snap (e vscode, OBStudio)
 # - Instalação do MySQL Server
 # - Configuração do MySQL Server
 # - Adicionar opções como: --version, -dualboot=true/false
@@ -26,33 +25,21 @@ spin='-\|/' # Utilizado na função [loading], representa o carregamento
 DNF_PROGRAMS=(
     fedora-workstation-repositories
     gnome-tweak-tool
-    google-chrome-stable
     software-properties-common
-    nemo nemo-python nemo-fileroller
-    alacarte
-    breeze-gtk breeze-icon-theme
+    breeze-gtk breeze-icon-theme breeze-cursor-theme
     php php-curl php-mysql php-sqlite3 phpunit
     composer
-    insync
     https://downloads.sourceforge.net/project/mscorefonts2/rpms/msttcore-fonts-installer-2.6-1.noarch.rpm
 )
 
 FLATPAK_PROGRAMS=(
     com.google.AndroidStudio
-    com.obsproject.Studio
-    org.apache.netbeans
     org.audacityteam.Audacity
     org.gimp.GIMP
     org.inkscape.Inkscape
-    com.getpostman.Postman
-    com.spotify.Client
     org.stellarium.Stellarium
     com.sweethome3d.Sweethome3d
-    org.videolan.VLC
     org.kde.kdenlive
-    io.atom.Atom
-    org.texstudio.TeXstudio
-    com.syntevo.SmartGit
 )
 
 ###############################################################################
