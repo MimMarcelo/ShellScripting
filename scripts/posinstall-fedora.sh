@@ -5,7 +5,7 @@
 
 # Para adicionar no futuro:
 # - Configuração do usuário global do Git está funcionando?
-# - Instalação do snap (e vscode, OBStudio)
+# - Instalação do snap (e vscode, OBStudio, scrcpy)
 # - Instalação do MySQL Server
 # - Configuração do MySQL Server
 # - Adicionar opções como: --version, -dualboot=true/false
@@ -24,12 +24,15 @@ spin='-\|/' # Utilizado na função [loading], representa o carregamento
 
 DNF_PROGRAMS=(
     fedora-workstation-repositories
-    gnome-tweak-tool
+    gnome-tweak-tool extension
     software-properties-common
     breeze-gtk breeze-icon-theme breeze-cursor-theme
     php php-curl php-mysql php-sqlite3 phpunit
     composer
     https://downloads.sourceforge.net/project/mscorefonts2/rpms/msttcore-fonts-installer-2.6-1.noarch.rpm
+    https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
+    https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+    ffmpeg
 )
 
 FLATPAK_PROGRAMS=(
