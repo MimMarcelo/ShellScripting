@@ -208,7 +208,7 @@ sudo -H -u $USER bash -c 'ln -s ~/Insync/Games/ ~/Games/_Games'
 
 echo "************************************************************************"
 echo "* FORMATE TERMINAL"
-echo PS1=\"\[\e[1;32m\]\u@\h \[\e[37m\]\w $ \[\e[0;37m\]\" >> ~/.bashrc
+sudo -H -u $USER bash -c 'echo "PS1=\"\[\e[1;32m\]\u@\h \[\e[37m\]\w $ \[\e[0;37m\]\"" >> ~/.bashrc'
 echo "Você também pode definir um nome para sua máquina com o comando:"
 echo "hostnamectl set-hostname nome-da-maquina"
 rm 0
