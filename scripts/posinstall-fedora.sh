@@ -35,6 +35,8 @@ DNF_PROGRAMS=(
     google-chrome 
     https://downloads.sourceforge.net/project/mscorefonts2/rpms/msttcore-fonts-installer-2.6-1.noarch.rpm
     ffmpeg
+    google-chrome-stable
+    snapd
     \*-firmware
 )
 
@@ -148,6 +150,10 @@ echo "Repository Insync"
 sh -c 'echo -e "[insync]\nname=insync repo\nbaseurl=http://yum.insync.io/fedora/\$releasever/\ngpgcheck=1\ngpgkey=https://d2t3ff60b2tol4.cloudfront.net/repomd.xml.key\nenabled=1\nmetadata_expire=120m" >> /etc/yum.repos.d/insync.repo'
 printf "\r- [OK]                                                             \n"
 
+echo "Google Chrome"
+installDNF fedora-workstation-repositories
+dnf config-manager --set-enabled google-chrome -y
+
 echo "Update DNF dependencies"
 dnf update -y
 
@@ -168,6 +174,31 @@ echo "* INSTALL FLATPAK PROGRAMS"
 for program in ${FLATPAK_PROGRAMS[@]}; do
     installFlatpak $program
 done
+
+echo ""
+echo "************************************************************************"
+echo "* INSTALL SNAP PROGRAMS"
+systemctl start snapd.seeded.service
+systemctl start snapd.service
+
+systemctl enable snapd.seeded.service
+systemctl enable snapd.service
+
+mkdir /snap
+ln -s /var/lib/snapd/snap /snap
+
+snap refresh
+snap install core
+snap install code
+snap install scrcpy
+snap install obs-studio
+
+snap connect obs-studio:alsa
+snap connect obs-studio:audio-record
+snap connect obs-studio:avahi-control
+snap connect obs-studio:camera
+snap connect obs-studio:jack1
+snap connect obs-studio:kernel-module-observe
 
 echo "************************************************************************"
 echo "* GIT GLOBAL CONFIGURATION"
