@@ -48,6 +48,7 @@ FLATPAK_PROGRAMS=(
     org.stellarium.Stellarium
     com.sweethome3d.Sweethome3d
     org.kde.kdenlive
+    ch.openboard.OpenBoard
 )
 
 ###############################################################################
